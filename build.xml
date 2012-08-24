@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns:ivy="antlib:org.apache.ivy.ant" default="build" name="antivy-skeleton">
+  <property name="basedir"           value="."/>
+  <property name="src.dir"           value="${basedir}/src" />
+  <property name="src.dir.java"      value="${src.dir}/java" />
+  <property name="src.dir.resources" value="${src.dir}/resources" />
+  <property name="build.dir"         value="${basedir}/build" />
+  <property name="build.dir.classes" value="${build.dir}/classes" />
+  <property name="build.dir.test"    value="${build.dir}/test" />
+  <property name="build.lib.dir"     value="${build.dir}/lib" />
+  <property name="test.dir"          value="${basedir}/test" />
+  <property name="test.dir.classes"  value="${build.dir}/test/classes" />
+  <property name="ivy.lib.dir"       value="${basedir}/lib" />
+  <property name="ivy.version"       value="2.3.0-rc1" />
+  <property name="ivy.url"
+            value="http://repo2.maven.org/maven2/org/apache/ivy/ivy" />
+
+  <path id="autoivy.classpath">
+    <fileset dir="${build.lib.dir}/jars">
+      <include name="**/*.jar" />
+    </fileset>
+  </path>
+
+  <path id="application.classpath">
+    <path refid="autoivy.classpath" />
+    <pathelement location="${build.dir.classes}"/>
+  </path>
+
+  <path id="ivyjar.classpath">
+    <fileset dir="${build.dir}" includes="ivy-${ivy.version}.jar" />
+  </path>
+
+  <!-- Ivy ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+  <target name="download-ivy" description="retrieve the Ivy library." depends="init">
+    <get src="${ivy.url}/${ivy.version}/ivy-${ivy.version}.jar" dest="${build.dir}"
+         usetimestamp="true"/>
+  </target>
+
+  <target name="init-ivy" depends="download-ivy" description="initialize Ivy.">
+    <taskdef resource="org/apache/ivy/ant/antlib.xml"
+             uri="antlib:org.apache.ivy.ant" classpathref="ivyjar.classpath"/>
+  </target>
+
+  <target name="ivy-resolve" description="retrieve dependencies with Ivy" depends="init-ivy">
+    <ivy:retrieve type="jar,source" sync="true"
+                  pattern="${build.lib.dir}/[type]s/[artifact]-[revision].[ext]" />
+  </target>
+
+  <!-- End Ivy ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+  <target name="init" description="Initialize build environment.">
+    <mkdir dir="${build.lib.dir}"/>
+    <mkdir dir="${build.dir.classes}"/>
+  </target>
+
+  <target name="clean" description="Clean the build environment.">
+    <delete dir="${build.dir}" />
+  </target>
+
+  <target name="build" depends="ivy-resolve" description="Build the project.">
+    <javac debug="true" destdir="${build.dir.classes}" includeantruntime="false">
+      <src path="${src.dir.java}"/>
+      <classpath refid="autoivy.classpath"/>
+    </javac>
+    <copy todir="${build.dir}">
+      <fileset dir="${src.dir.resources}" />
+    </copy>
+  </target>
+
+  <target name="run" depends="build" description="Run the application.">
+    <java classname="org.deadcafe.App" fork="true"
+          classpathref="application.classpath" />
+  </target>
+</project>
